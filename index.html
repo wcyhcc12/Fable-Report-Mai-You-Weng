@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>賣油翁・期中團體報告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<style>
+:root{
+  --bg:#E9ECF3; --bg2:#DCE1EC; --stage:#F6F7FB; --ink:#1F2A44; --ink2:#55607A;
+  --cut:#D9542B; --cut-soft:#F6DCD2; --amber:#E8A93A; --amber-soft:#FBEBC9; --indigo:#3B4F7A; --indigo-soft:#D5DCEB;
+  --shadow:rgba(31,42,68,.18);
+  --head:"Huninn","jf-openhuninn-2.0","jf open 粉圓 2.0","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --body:"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei",sans-serif;
+}
+:root[data-theme="dark"]{
+  --bg:#141B31; --bg2:#1B2340; --stage:#1F2848; --ink:#F3EBDD; --ink2:#B6B0A6;
+  --cut:#EE7449; --cut-soft:#3A2A33; --amber:#F0B954; --amber-soft:#3A3326; --indigo:#8EA3D3; --indigo-soft:#2A3558;
+  --shadow:rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);line-height:1.8;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(var(--bg2) 1.2px,transparent 1.3px);background-size:22px 22px}
+svg.sym{fill:currentColor;display:block}
+.cutfx{filter:drop-shadow(4px 5px 0 var(--shadow))}
+
+/* ---------- toolbar ---------- */
+.bar{position:fixed;z-index:20;top:14px;right:14px;display:flex;gap:8px}
+.bar button{font:600 14px var(--body);color:var(--ink);background:var(--stage);border:2px solid var(--ink);padding:6px 12px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.bar button:hover{background:var(--amber-soft)}
+.bar button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.series{position:fixed;z-index:20;top:18px;left:18px;font:700 14px var(--head);letter-spacing:.2em;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.series i{width:22px;height:22px;background:var(--cut);display:inline-block;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+
+/* ---------- scene base ---------- */
+.scene{position:relative;background:var(--stage);color:var(--ink);overflow:hidden;border:3px solid var(--ink)}
+.tag{position:absolute;top:22px;left:30px;font:700 15px var(--body);letter-spacing:.12em;color:var(--cut);display:flex;gap:10px;align-items:center;z-index:3}
+.tag b{background:var(--cut);color:var(--stage);padding:2px 10px;font-weight:700}
+h1,h2,h3{font-family:var(--head);font-weight:700;letter-spacing:.06em;line-height:1.3}
+.hl{color:var(--cut);font-weight:700;background:linear-gradient(transparent 62%,var(--cut-soft) 62%)}
+.em{font-weight:800}
+.mute{color:var(--ink2)}
+.inner{position:relative;z-index:2;height:100%}
+
+/* slide mode: fixed 1280x720 stage scaled to fit */
+body.slides{overflow:hidden;height:100vh;height:100dvh;touch-action:pan-y pinch-zoom}
+body.read .bar,body.read .series{position:absolute}
+body.slides #deck{position:fixed;inset:0}
+body.slides .scene{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;display:none;box-shadow:10px 12px 0 var(--shadow)}
+body.slides .scene.on{display:block;animation:rise .45s ease both}
+@keyframes rise{from{opacity:0;transform:translate(-50%,-48%) scale(var(--s))}to{opacity:1;transform:translate(-50%,-50%) scale(var(--s))}}
+body.slides .scene{transform:translate(-50%,-50%) scale(var(--s,1))}
+body.slides .inner{padding:84px 90px 64px;font-size:calc(26px*var(--f,1))}
+.nav{display:none}
+body.slides .nav{display:flex;position:fixed;z-index:20;bottom:16px;left:50%;transform:translateX(-50%);align-items:center;gap:14px;font:600 14px var(--body);color:var(--ink2)}
+.nav button{font:700 18px var(--body);width:40px;height:40px;border:2px solid var(--ink);background:var(--stage);color:var(--ink);cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.prog{width:200px;height:6px;background:var(--bg2);position:relative}
+.prog span{position:absolute;inset:0 auto 0 0;background:var(--cut);transition:width .3s}
+.timer{display:none;position:fixed;z-index:20;bottom:18px;right:18px;font:700 20px var(--body);background:var(--ink);color:var(--stage);padding:6px 14px;letter-spacing:.08em}
+body.timing .timer{display:block}
+.hint{position:fixed;z-index:20;bottom:20px;left:18px;font:13px var(--body);color:var(--ink2)}
+body:not(.slides) .hint{display:none}
+
+/* scroll mode */
+body.read #deck{max-width:1080px;margin:0 auto;padding:84px 16px 80px;display:flex;flex-direction:column;gap:34px}
+body.read .scene{box-shadow:8px 10px 0 var(--shadow)}
+body.read .inner{padding:72px 56px 48px;font-size:19px}
+
+/* ---------- curtain ---------- */
+.curtain{position:absolute;left:0;right:0;top:0;height:70px;z-index:1;color:var(--indigo)}
+.curtain svg{width:100%;height:100%}
+.ground{position:absolute;left:0;right:0;bottom:0;height:14px;background:var(--ink);z-index:1}
+
+/* ---------- cover ---------- */
+.t-cover .inner{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.t-cover .cast{display:flex;gap:26px;align-items:flex-end;color:var(--ink);margin-bottom:34px}
+.t-cover .cast svg{width:92px;height:92px}
+.t-cover .cast svg:nth-child(odd){color:var(--cut)}
+.t-cover h1{font-size:2.9em;letter-spacing:.14em}
+.t-cover .sub{margin-top:14px;font:700 1.15em var(--head);color:var(--cut);letter-spacing:.08em}
+.t-cover .course{margin-top:30px;font-size:.62em;letter-spacing:.24em;color:var(--ink2)}
+.t-cover .kind{display:inline-block;margin-bottom:22px;font-size:.6em;letter-spacing:.3em;border:2px solid var(--ink);padding:3px 16px}
+
+/* ---------- playbill ---------- */
+.t-playbill{background:#1F2A44;color:#F6F1E7}
+:root[data-theme="dark"] .t-playbill{background:#0E1428}
+.t-playbill .tag b{color:#1F2A44!important}
+.t-narrate .tag{top:86px}
+.t-finale .tag{left:140px}
+h3{flex-wrap:wrap}
+.t-playbill .tag{color:var(--amber)}
+.t-playbill .tag b{background:var(--amber);color:var(--ink)}
+.t-playbill .inner{display:grid;grid-template-columns:0.95fr 1.05fr;align-items:center;gap:40px}
+.spot{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:1}
+.spot::before{content:"";position:absolute;inset:4%;border-radius:50%;background:radial-gradient(circle,var(--amber) 0,rgba(232,169,58,.55) 45%,rgba(232,169,58,0) 70%)}
+.spot svg{position:relative;width:62%;height:62%;color:#1F2A44}
+.t-playbill .kicker{font-size:.62em;letter-spacing:.4em;color:var(--amber)}
+.t-playbill h2{font-size:3.2em;margin:10px 0 14px;letter-spacing:.12em;color:#F6F1E7}
+.t-playbill .src{font-size:.72em;color:#C9C3B8;letter-spacing:.1em;border-top:2px solid rgba(246,241,231,.25);padding-top:14px}
+.t-playbill .lead{margin-top:18px;font-size:1.02em;color:#F6F1E7}
+.t-playbill .lead .em{color:var(--amber)}
+
+/* ---------- narrate ---------- */
+.t-narrate .inner{display:grid;grid-template-columns:1fr 210px;gap:44px;align-items:center;padding-top:110px!important}
+.t-narrate h3,.t-adapt h3,.t-analysis h3,.t-list h3,.t-duo h3,.t-finale h3{font-size:1.45em;margin-bottom:.7em;display:flex;align-items:baseline;gap:.5em}
+h3 small{font:700 .5em var(--body);letter-spacing:.2em;color:var(--cut)}
+.story p{margin-bottom:.6em;text-align:justify}
+.story p.open{font-weight:700;color:var(--indigo)}
+.prop{color:var(--indigo)}
+.prop svg{width:100%;height:auto}
+
+/* ---------- moral ---------- */
+.t-moral .inner{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.t-moral .glow{position:absolute;left:50%;top:52%;width:640px;height:640px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,var(--amber-soft) 0,var(--amber-soft) 40%,transparent 70%);z-index:0}
+.t-moral .kicker{font:700 .7em var(--head);letter-spacing:.5em;color:var(--cut);margin-bottom:22px;position:relative}
+.t-moral blockquote{position:relative;font:700 1.22em/1.75 var(--head);max-width:30em;letter-spacing:.03em}
+.t-moral .aside{position:relative;margin-top:22px;font-size:.78em;color:var(--ink2);max-width:36em}
+
+/* ---------- analysis ---------- */
+.t-analysis .inner{display:grid;grid-template-columns:280px 1fr;gap:52px;align-items:center}
+.vs{display:flex;flex-direction:column;align-items:center;gap:10px}
+.vs .pair{display:flex;align-items:flex-end;gap:12px}
+.vs svg{width:112px;height:112px}
+.vs svg:first-child{color:var(--indigo)} .vs svg:last-child{color:var(--cut)}
+.vs .x{font:700 22px var(--head);color:var(--ink2)}
+.vs .cap{font-size:15px;letter-spacing:.2em;color:var(--ink2)}
+.t-analysis p,.t-analysis li{text-align:justify}
+.dots{list-style:none}
+.dots li{position:relative;padding-left:1.4em;margin-bottom:.7em}
+.dots li::before{content:"";position:absolute;left:0;top:.62em;width:.6em;height:.6em;background:var(--cut);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+
+/* ---------- duo ---------- */
+.t-duo .cols{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+.t-duo .col{border:3px solid var(--ink);padding:26px 28px 24px;position:relative;background:var(--stage)}
+.t-duo .col:nth-child(1){box-shadow:7px 7px 0 var(--indigo)}
+.t-duo .col:nth-child(2){box-shadow:7px 7px 0 var(--cut)}
+.t-duo .col svg{width:70px;height:70px;position:absolute;right:18px;top:-38px;background:var(--stage);border:3px solid var(--ink);padding:6px}
+.t-duo .col:nth-child(1) svg{color:var(--indigo)} .t-duo .col:nth-child(2) svg{color:var(--cut)}
+.t-duo h4{font:700 1em var(--head);margin-bottom:.5em;letter-spacing:.08em}
+.t-duo p{font-size:.86em;text-align:justify}
+.t-duo .note{display:inline-block;margin-top:12px;font-weight:700;font-size:.8em;padding:2px 12px;background:var(--amber-soft)}
+
+/* ---------- list ---------- */
+.t-list .inner{display:grid;grid-template-columns:1fr 250px;gap:50px;align-items:center}
+.steps{list-style:none;margin:.6em 0 .9em}
+.steps li{display:flex;gap:18px;align-items:center;margin-bottom:16px;font:700 1.05em var(--head)}
+.steps li span{flex:none;width:52px;height:52px;display:grid;place-items:center;background:var(--cut);color:var(--stage);font:700 26px var(--head);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.t-list .out{font-weight:800;color:var(--indigo);border-left:6px solid var(--amber);padding-left:14px}
+
+/* ---------- adapt (comic) ---------- */
+.t-adapt .inner{display:grid;grid-template-columns:230px 1fr;gap:34px;align-items:stretch}
+.t-adapt .head{grid-column:1/-1}
+.t-adapt .strip{display:flex;flex-direction:column;gap:14px}
+.panel{border:3px solid var(--ink);background:var(--stage);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:10px}
+.panel svg{width:96px;height:96px}
+.panel.old{background:var(--indigo-soft);color:var(--indigo)}
+.panel.new{background:var(--cut-soft);color:var(--cut)}
+.panel small{position:absolute;top:6px;left:8px;font:700 13px var(--body);letter-spacing:.2em;color:var(--ink)}
+.panel .duo{display:flex;gap:4px}
+.panel .duo svg{width:74px;height:74px}
+.frame{border:3px solid var(--ink);padding:26px 30px;background:var(--stage);box-shadow:8px 8px 0 var(--amber);font-size:.92em}
+.frame p{text-indent:2em;text-align:justify;margin-bottom:.55em}
+.frame p:last-child{margin-bottom:0}
+
+/* ---------- finale ---------- */
+.t-finale .drape{position:absolute;top:0;bottom:0;width:120px;z-index:1;color:var(--indigo)}
+.t-finale .drape.l{left:0}.t-finale .drape.r{right:0;transform:scaleX(-1)}
+.t-finale .drape svg{width:100%;height:100%}
+.t-finale .inner{padding-left:190px!important;padding-right:190px!important;display:flex;flex-direction:column;justify-content:center}
+.t-finale .end{margin-top:26px;text-align:center;font:700 .9em var(--head);letter-spacing:.6em;color:var(--cut)}
+
+
+/* ---------- beats (起承轉合) ---------- */
+.t-beats .row{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:.4em}
+.beat{border:3px solid var(--ink);background:var(--stage);padding:54px 18px 18px;position:relative;font-size:.74em;text-align:justify}
+.beat:nth-child(odd){box-shadow:6px 6px 0 var(--indigo)}.beat:nth-child(even){box-shadow:6px 6px 0 var(--cut)}
+.beat .ch{position:absolute;top:-26px;left:16px;width:58px;height:58px;display:grid;place-items:center;background:var(--cut);color:#fff;font:700 28px var(--head);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.beat:nth-child(odd) .ch{background:var(--indigo)}
+.beat h4{font:700 1.12em var(--head);margin-bottom:.4em}
+.beat svg{width:46px;height:46px;position:absolute;top:8px;right:10px;color:var(--ink2);opacity:.85}
+/* ---------- contrast table ---------- */
+.ctab{width:100%;border-collapse:collapse;font-size:.8em;margin-top:.3em}
+.ctab th,.ctab td{border:3px solid var(--ink);padding:10px 16px;text-align:left;vertical-align:top}
+.ctab thead th{font:700 1.05em var(--head);letter-spacing:.06em}
+.ctab thead th:nth-child(2){background:var(--indigo-soft);color:var(--indigo)}
+.ctab thead th:nth-child(3){background:var(--cut-soft);color:var(--cut)}
+.ctab thead th:first-child{background:transparent;border-top-color:transparent;border-left-color:transparent}
+.ctab tbody th{font:700 .95em var(--head);white-space:nowrap;background:var(--amber-soft);width:5.5em}
+.ctab .th-ic{display:flex;align-items:center;gap:10px}.ctab .th-ic svg{width:40px;height:40px}
+.t-contrast .foot{margin-top:.8em;font-size:.8em;font-weight:700;border-left:6px solid var(--amber);padding-left:14px}
+/* ---------- classic text ---------- */
+.t-classic .inner{display:grid;grid-template-columns:1fr 200px;gap:44px;align-items:center;padding-top:110px!important}
+.classic{font-size:1.02em;line-height:2.05;letter-spacing:.06em;text-align:justify;border-left:6px solid var(--cut);padding-left:24px}
+.classic q{quotes:"「" "」";color:var(--cut);font-weight:700}
+.t-classic .tag{top:86px}
+.groupcard{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:.5em}
+.gc{border:3px solid var(--ink);padding:22px 26px;background:var(--stage);font-size:.8em}
+.gc:nth-child(1){box-shadow:7px 7px 0 var(--indigo)}.gc:nth-child(2){box-shadow:7px 7px 0 var(--cut)}
+.gc h4{font:700 1.3em var(--head);margin-bottom:.3em}.gc:nth-child(1) h4{color:var(--indigo)}.gc:nth-child(2) h4{color:var(--cut)}
+.gc ul{list-style:none}.gc li{padding-left:1.2em;position:relative;margin-bottom:.35em}.gc li::before{content:"";position:absolute;left:0;top:.65em;width:.5em;height:.5em;background:currentColor}
+@media (max-width:767px){.t-beats .row,.groupcard{grid-template-columns:1fr!important;gap:40px}.t-classic .inner{grid-template-columns:1fr!important;padding-top:96px!important}.t-classic .tag{top:62px;left:22px}.ctab{font-size:.85em}.ctab th,.ctab td{padding:8px}}
+
+
+.t-beats .inner,.t-contrast .inner,.t-groups .inner,.t-duo .inner{display:flex;flex-direction:column;justify-content:center}
+.t-beats .row{margin-top:1.6em}
+.ctab{font-size:.9em}
+body.slides .t-narrate .story{font-size:.93em}
+body.slides .t-narrate .inner{align-items:start}
+.beat{font-size:.84em!important}
+.gc{font-size:.92em}
+body.slides .t-narrate .inner,body.slides .t-classic .inner{padding-top:136px!important}
+body.slides .t-adapt .frame{font-size:.87em}
+@media (max-width:480px){
+  .ctab{font-size:.8em;table-layout:fixed}.ctab th,.ctab td{padding:6px 7px}
+  .ctab .th-ic svg{display:none}.ctab tbody th{white-space:normal;width:3.4em}
+  .panel{min-width:0}.panel svg{width:64px;height:64px}.panel .duo svg{width:52px;height:52px}
+  .frame{padding:18px 16px}.t-duo .col{padding:22px 18px 20px}
+}
+body.read .t-narrate .inner,body.read .t-classic .inner{align-items:start;padding-top:132px!important}
+@media (max-width:767px){body.read .t-narrate .inner,body.read .t-classic .inner{padding-top:104px!important}}
+.t-duo h4{padding-right:76px}
+/* ---------- small screens (read mode) ---------- */
+@media (max-width:767px){
+  body.read .inner{padding:66px 22px 34px;font-size:17px}
+  .t-playbill .inner,.t-narrate .inner,.t-analysis .inner,.t-list .inner,.t-adapt .inner,.t-duo .cols{grid-template-columns:1fr!important}
+  .t-narrate .inner{padding-top:96px!important}
+  .t-narrate .tag{top:62px;left:22px}.t-finale .tag{left:52px}
+  .curtain{height:50px}
+  .t-playbill .inner{gap:10px}.spot{max-width:240px;margin:0 auto}
+  .t-playbill h2{font-size:2.3em}
+  .prop{max-width:130px;margin:0 auto}
+  .t-adapt .strip{flex-direction:row}.panel{min-height:120px}
+  .t-duo .cols{gap:44px;margin-top:28px}
+  .t-finale .drape{width:34px}.t-finale .inner{padding-left:52px!important;padding-right:52px!important}
+  .t-moral .glow{width:100%;height:auto;aspect-ratio:1}
+  .t-cover h1{font-size:2.2em}.t-cover .cast svg{width:54px;height:54px}.t-cover .cast{gap:12px}
+  .bar{top:10px;right:10px}.bar button{font-size:12px;padding:4px 8px}
+  .series{top:14px;left:12px;font-size:12px}
+}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body{background:#fff!important}
+  .bar,.nav,.hint,.timer,.series{display:none!important}
+  body #deck{display:block!important;padding:0!important;max-width:none!important}
+  body .scene{display:block!important;position:relative!important;transform:none!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:180mm;break-after:page;box-shadow:none!important;animation:none!important;margin:0 0 6mm}
+  body .inner{font-size:16px!important}
+}
+@media (prefers-reduced-motion:reduce){body.slides .scene.on{animation:none}}
+</style>
+</head>
+<body>
+<div class="series"><i></i>寓言劇場</div>
+<div class="bar">
+  <button id="bMode" type="button">閱讀模式</button>
+  <button id="bTheme" type="button">深色</button>
+</div>
+<main id="deck"></main>
+<div class="nav"><button id="prev" type="button" aria-label="上一幕">‹</button><div class="prog"><span id="pg"></span></div><button id="next" type="button" aria-label="下一幕">›</button></div>
+<div class="hint">← → 或左右滑動換幕　F 全螢幕　T 計時　D 深淺色</div>
+<div class="timer" id="timer">00:00</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <symbol id="i-sprout" viewBox="0 0 100 100"><rect x="47" y="30" width="6" height="62"/><path d="M50 52C30 52 18 40 16 24c18 0 32 10 34 28z"/><path d="M50 40c4-18 18-28 36-28-2 18-16 28-36 28z"/><path d="M50 30c-6-10-6-20 0-28 6 8 6 18 0 28z"/><rect x="26" y="90" width="48" height="6"/></symbol>
+  <symbol id="i-farmer" viewBox="0 0 100 100"><path d="M18 30L50 8l32 22z"/><circle cx="50" cy="38" r="10"/><path d="M30 96l6-44h28l6 44z"/><rect x="66" y="50" width="5" height="46" transform="rotate(12 68 72)"/></symbol>
+  <symbol id="i-bird" viewBox="0 0 100 100"><path d="M14 58c8-14 26-22 44-20l10-10c8-4 16 0 18 6l10 2-10 6c0 20-18 34-40 34-12 0-24-6-32-18z"/><path d="M34 52c10-16 26-26 40-24-6 16-20 28-40 24z" opacity=".55"/><circle cx="78" cy="34" r="2.6" fill="#fff"/><rect x="40" y="84" width="4" height="12"/><rect x="52" y="84" width="4" height="12"/></symbol>
+  <symbol id="i-lord" viewBox="0 0 100 100"><rect x="30" y="6" width="40" height="7"/><rect x="33" y="13" width="2" height="10"/><rect x="41" y="13" width="2" height="10"/><rect x="57" y="13" width="2" height="10"/><rect x="65" y="13" width="2" height="10"/><rect x="42" y="13" width="16" height="10"/><circle cx="50" cy="32" r="10"/><path d="M50 44c-16 0-26 10-30 52h60c-4-42-14-52-30-52z"/><path d="M50 44l-6 52h12z" opacity=".55"/></symbol>
+  <symbol id="i-palace" viewBox="0 0 100 100"><path d="M4 40c16-2 30-14 46-26 16 12 30 24 46 26v6H4z"/><rect x="14" y="46" width="72" height="6"/><rect x="18" y="52" width="7" height="38"/><rect x="38" y="52" width="7" height="38"/><rect x="55" y="52" width="7" height="38"/><rect x="75" y="52" width="7" height="38"/><rect x="8" y="90" width="84" height="6"/></symbol>
+  <symbol id="i-peach" viewBox="0 0 100 100"><path d="M50 34c-26-16-44 6-38 30 6 22 24 32 38 32s32-10 38-32c6-24-12-46-38-30z"/><path d="M50 34c4-14 14-24 30-26-2 14-14 24-30 26z" opacity=".6"/><path d="M50 40v40" stroke="#fff" stroke-width="2.5" opacity=".5"/></symbol>
+  <symbol id="i-courtier" viewBox="0 0 100 100"><circle cx="50" cy="16" r="9"/><circle cx="50" cy="32" r="11"/><path d="M50 46c-12 0-20 8-24 50h48c-4-42-12-50-24-50z"/><path d="M26 64c-8 6-14 10-20 10 6-8 12-14 20-18z"/><path d="M74 64c8 6 14 10 20 10-6-8-12-14-20-18z"/></symbol>
+  <symbol id="i-boy" viewBox="0 0 100 100"><path d="M38 20c0-10 6-15 13-15s13 5 12 15c-6-4-16-4-25 0z"/><circle cx="50" cy="24" r="11"/><path d="M28 42h44l6 26H66v-6l-2 4H36l-2-4v6H22z"/><rect x="36" y="66" width="12" height="30"/><rect x="52" y="66" width="12" height="30"/></symbol>
+  <symbol id="i-girl" viewBox="0 0 100 100"><circle cx="50" cy="24" r="11"/><path d="M39 22c0-12 6-17 12-17s12 4 12 14c6 2 12 10 12 22-6-6-10-8-12-12-6 2-16 0-24-7z"/><path d="M50 38c-10 0-16 6-18 18l-8 30h52l-8-30c-2-12-8-18-18-18z"/><rect x="40" y="86" width="6" height="10"/><rect x="54" y="86" width="6" height="10"/></symbol>
+  <symbol id="i-screen" viewBox="0 0 100 100"><path d="M10 18h80v52H10zm6 6v40h68V24z"/><rect x="44" y="70" width="12" height="12"/><rect x="28" y="82" width="44" height="6"/><path d="M34 38l12 8-12 8zM56 50h14v4H56z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 100 100"><path d="M50 90C20 68 6 52 6 34 6 20 16 10 30 10c9 0 16 5 20 12 4-7 11-12 20-12 14 0 24 10 24 24 0 18-14 34-44 56z"/><path d="M50 22l-6 18 10 8-8 18" stroke="#fff" stroke-width="3" fill="none" opacity=".75"/></symbol>
+  <symbol id="i-lantern" viewBox="0 0 100 100"><rect x="47" y="2" width="6" height="10"/><rect x="36" y="12" width="28" height="6"/><ellipse cx="50" cy="48" rx="28" ry="30"/><rect x="36" y="78" width="28" height="6"/><rect x="46" y="84" width="8" height="12"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 100 100"><rect x="14" y="16" width="72" height="68"/><rect x="8" y="10" width="10" height="80" rx="5"/><rect x="82" y="10" width="10" height="80" rx="5"/><path d="M28 30h44v4H28zm0 12h44v4H28zm0 12h30v4H28z" fill="#fff" opacity=".6"/></symbol>
+  <symbol id="i-curtain" viewBox="0 0 1200 70" preserveAspectRatio="none"><path d="M0 0h1200v34c-25 0-25 30-50 30s-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30-25-30-50-30-25 30-50 30S25 34 0 34z"/></symbol>
+  <symbol id="i-drape" viewBox="0 0 120 720" preserveAspectRatio="none"><path d="M0 0h120c-30 120-40 300-20 460 10 90 30 170 40 260H0z"/><path d="M30 0c-10 200-6 460 10 720" stroke="#fff" stroke-width="3" fill="none" opacity=".25"/><path d="M70 0c-16 200-14 420 6 720" stroke="#fff" stroke-width="3" fill="none" opacity=".18"/></symbol>
+  <symbol id="i-archer" viewBox="0 0 100 100"><circle cx="40" cy="18" r="9"/><path d="M30 30h20l4 30H46l-2 36h-8l-2-36h-8z"/><path d="M50 36l26 4v4l-26-2z"/><path d="M78 8c14 22 14 62 0 84l-3-2c12-20 12-60 0-80z"/><path d="M76 10v80" stroke="currentColor" stroke-width="1.5"/><path d="M48 41h40l-6-3v6z"/></symbol>
+  <symbol id="i-oilman" viewBox="0 0 100 100"><path d="M34 14l10-8 10 8z"/><circle cx="44" cy="22" r="8"/><path d="M34 32h20l2 28h-6l-2 36h-8l-2-36h-6z"/><rect x="2" y="34" width="96" height="4" transform="rotate(-6 50 36)"/><path d="M6 42h4v10H6zM90 34h4v10h-4z"/><ellipse cx="8" cy="66" rx="9" ry="13"/><ellipse cx="92" cy="58" rx="9" ry="13"/></symbol>
+  <symbol id="i-gourd" viewBox="0 0 100 100"><rect x="46" y="4" width="8" height="10"/><circle cx="50" cy="30" r="15"/><circle cx="50" cy="66" r="26"/><rect x="40" y="42" width="20" height="6"/><circle cx="50" cy="13" r="7" fill="#fff" opacity=".5"/><rect x="45" y="10" width="10" height="5" fill="#fff" opacity=".5"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 100 100"><path d="M50 6a44 44 0 1 0 0.01 0zM38 38v24h24V38z" fill-rule="evenodd"/><path d="M50 14a36 36 0 1 0 .01 0z" fill="none" stroke="#fff" stroke-width="2" opacity=".5"/></symbol>
+  <symbol id="i-ball" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42"/><path d="M8 50h84M50 8v84M20 20c16 16 16 44 0 60M80 20c-16 16-16 44 0 60" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 100 100"><rect x="62" y="2" width="5" height="34" transform="rotate(10 64 18)"/><rect x="24" y="30" width="52" height="8"/><path d="M28 38h44l-6 56H34z"/><circle cx="42" cy="82" r="4" fill="#fff" opacity=".6"/><circle cx="54" cy="84" r="4" fill="#fff" opacity=".6"/><circle cx="48" cy="76" r="4" fill="#fff" opacity=".6"/></symbol>
+  <symbol id="i-teapot" viewBox="0 0 100 100"><rect x="40" y="18" width="20" height="8"/><path d="M26 30h48c6 0 10 6 10 16v24c0 14-10 22-22 22H38c-12 0-22-8-22-22V46c0-10 4-16 10-16z"/><path d="M84 42l12-12 3 3-11 15z"/><path d="M18 44c-14 0-14 26 0 26v-6c-6 0-6-14 0-14z"/></symbol>
+  <symbol id="i-volley" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42"/><path d="M50 8c-8 16-8 34 0 42M50 50c18 0 32-10 40-24M50 50c-10 14-28 22-44 18M50 50c10 14 12 30 6 42M50 50c-18-4-30-16-34-30" stroke="#fff" stroke-width="3.2" fill="none" opacity=".75"/></symbol>
+ </defs>
+</svg>
+
+<script>
+const DATA = {"course": "115-1　中文：敘事思辨與溝通表達（一）・期中團體報告", "scenes": [{"type": "cover", "cast": ["archer", "oilman", "gourd", "coin"], "kind": "期中團體報告", "title": "賣油翁", "sub": "寓言故事的分析與現代改編"}, {"type": "groups", "tag": ["期中報告", "賣油翁"], "h": "報告分工", "groups": [{"h": "第一組｜講述與分析", "sub": "中外寓言故事的經典之作", "items": ["講述原文與白話故事", "故事的道理（寓意）", "題材：選了什麼材料", "結構：用什麼方式編寫", "歸納故事的主題"]}, {"h": "第二組｜現代改編", "sub": "改編為現代版本（五百字以內）", "items": ["改編構想：古今元素對照", "改編故事〈新賣油翁〉", "改編如何保留原作的主題"]}]}, {"type": "playbill", "tag": ["第一組", "故事講述與分析"], "icon": "oilman", "kicker": "本 組 劇 目", "title": "賣油翁", "src": "出處：北宋・歐陽修《歸田錄》", "lead": "這是一個神射手被<span class=\"em\">賣油老翁</span>點醒的故事。"}, {"type": "classic", "tag": ["第一組", "故事講述與分析"], "icon": "gourd", "h": "原文", "body": "陳康肅公堯咨善射，當世無雙，公亦以此自矜。嘗射於家圃，有賣油翁釋擔而立，睨之，久而不去。見其發矢十中八九，但微頷之。康肅問曰：<q>汝亦知射乎？吾射不亦精乎？</q>翁曰：<q>無他，但手熟爾。</q>康肅忿然曰：<q>爾安敢輕吾射！</q>翁曰：<q>以我酌油知之。</q>乃取一葫蘆置於地，以錢覆其口，徐以杓酌油瀝之，自錢孔入，而錢不溼。因曰：<q>我亦無他，惟手熟爾。</q>康肅笑而遣之。"}, {"type": "narrate", "tag": ["第一組", "故事講述與分析"], "icon": "archer", "h": "故事講述", "body": "<p>北宋的陳堯咨（諡號康肅）擅長射箭，當時沒有人比得上，他也因此相當自負。</p><p>有一天他在自家園子射箭，一位賣油的老翁放下擔子站在一旁，斜著眼看了很久都不離開。陳堯咨射十箭中了八九箭，老翁卻只是微微點頭。</p><p>陳堯咨問他：「你也懂射箭嗎？我射得不精嗎？」老翁說：「沒什麼，只是手熟罷了。」陳堯咨很生氣：「你竟敢看輕我的射術！」老翁說：「從我倒油就知道。」他把葫蘆放在地上，用一枚銅錢蓋住瓶口，再用油杓慢慢把油倒下去。油從錢孔流進葫蘆，銅錢卻一點也沒沾濕。老翁說：「我也沒什麼，只是手熟罷了。」陳堯咨笑著讓他離開了。</p>"}, {"type": "moral", "tag": ["第一組", "故事講述與分析"], "kicker": "故事的道理", "text": "熟能生巧。再高明的技藝，都是長時間反覆練習的結果；有一技之長，也不必因此自滿。", "aside": "射箭和倒油，在老翁眼中是同一回事。"}, {"type": "duo", "tag": ["第一組", "故事講述與分析"], "h": "道理的兩個角度", "cols": [{"icon": "archer", "h": "一、從陳堯咨的角度", "p": "他射箭「十中八九」，確實是當世第一，卻因此「自矜」，聽到「但手熟爾」就「忿然」動怒。故事提醒擁有才能的人：本事越大，越容易看不見別人，驕傲反而讓自己顯得狹隘。", "note": "（戒驕矜）"}, {"icon": "oilman", "h": "二、從賣油翁的角度", "p": "倒油穿過錢孔而錢不溼，和百步穿楊一樣精準，靠的都是日復一日的熟練。技藝沒有高低貴賤之分，市井小販的功夫，也能和士大夫的武藝相提並論。", "note": "（熟能生巧・技無貴賤）"}]}, {"type": "analysis", "tag": ["第一組", "故事講述與分析"], "icons": ["archer", "oilman"], "cap": "射箭　與　酌油", "h": "故事的題材", "body": "<ul class=\"dots\"><li>歐陽修選了兩種<span class=\"hl\">完全不同身分的日常技藝</span>：士大夫的射箭、市井小販的倒油。</li><li>射箭是古代「六藝」之一，代表身分與名聲；倒油則是謀生的手藝，平凡到沒有人會注意。</li><li>把一高一低的兩種技藝放在一起，讀者才會發現：<span class=\"hl\">兩者背後的道理其實一樣</span>，都是「手熟」。</li></ul>"}, {"type": "contrast", "tag": ["第一組", "故事講述與分析"], "h": "結構一：處處對比", "cols": [{"icon": "archer", "h": "陳堯咨"}, {"icon": "oilman", "h": "賣油翁"}], "rows": [["身分", "朝廷官員、士大夫", "市井賣油的老翁"], ["技藝", "射箭，十中八九", "倒油，自錢孔入而錢不溼"], ["態度", "自矜，以射術為傲", "淡然，只說「無他，但手熟爾」"], ["神態", "問 → 忿然 → 笑", "睨之 → 微頷 → 酌油示範"]], "foot": "對比越強烈，結尾的「笑而遣之」越有力量。"}, {"type": "beats", "tag": ["第一組", "故事講述與分析"], "h": "結構二：起承轉合", "beats": [{"ch": "起", "icon": "archer", "h": "善射自矜", "p": "陳堯咨射術當世無雙，並以此自豪。"}, {"ch": "承", "icon": "oilman", "h": "翁睨微頷", "p": "賣油翁旁觀很久，對十中八九只是微微點頭。"}, {"ch": "轉", "icon": "gourd", "h": "酌油示範", "p": "兩人起了衝突，老翁不辯解，而是倒油穿過錢孔給他看。"}, {"ch": "合", "icon": "coin", "h": "笑而遣之", "p": "陳堯咨心服，笑著讓老翁離開，道理自然浮現。"}]}, {"type": "list", "tag": ["第一組", "故事講述與分析"], "icon": "coin", "h": "結構三：說理的方法", "intro": "這則故事沒有直接講道理，而是：", "items": ["同一句話說兩次：「無他，但手熟爾」→「我亦無他，惟手熟爾」", "用動作代替說教：把倒油拆成「取葫蘆、覆錢、徐酌、瀝之」", "用神態寫心理：睨、微頷、忿然、笑"], "outro": "讀者自己看懂道理，比被告知更有說服力。"}, {"type": "moral", "tag": ["第一組", "故事講述與分析"], "kicker": "故事的主題", "text": "任何技藝的高明，都來自熟練；能力越強，越要懂得謙虛。", "aside": "題材（射箭與酌油）＋結構（對比、重複、示範）→ 主題（熟能生巧、戒驕矜）"}, {"type": "playbill", "tag": ["第二組", "現代改編"], "icon": "volley", "kicker": "改 編 劇 目", "title": "新賣油翁", "src": "大學校園現代版・全文 427 字", "lead": "把射箭換成<span class=\"em\">排球跳發</span>，把倒油換成<span class=\"em\">倒紅茶</span>。"}, {"type": "contrast", "tag": ["第二組", "現代改編"], "h": "改編構想：古今對照", "cols": [{"icon": "archer", "h": "原作〈賣油翁〉"}, {"icon": "volley", "h": "改編〈新賣油翁〉"}], "rows": [["高手", "陳堯咨，射術當世無雙", "馬哥，歷史系大一、系排發球最準的人"], ["旁觀者", "賣油翁，釋擔而立", "學餐飲料攤阿伯，推車停在場邊"], ["示範", "油穿過錢孔，錢不溼", "紅茶倒進吸管孔，封膜不沾"], ["點題句", "無他，但手熟爾", "沒什麼，就手熟而已"], ["結局", "笑而遣之", "笑著買下那杯紅茶，從此不再自稱發球王"]], "foot": "保留原作的對比、重複句和動作示範，只把場景搬到校園。"}, {"type": "adapt", "tag": ["第二組", "現代改編"], "h": "故事改編：新賣油翁", "part": "第一格", "old": "archer", "now": ["boy", "volley"], "body": "<p>馬哥是歷史系的大一新生，才進系排一個學期，跳發就是隊上最準的，十球裡有八九球能砸進對面底線的角落。系際盃沒幾個人接得住，他自己也常把「歷史系發球王」掛在嘴邊。</p><p>某天傍晚，馬哥在體育館旁的排球場練發球，還在對面場地的角落擺了一個寶特瓶當目標。學餐飲料攤的阿伯推著推車經過，停在場邊斜眼看著，看了很久都沒走。馬哥連發十球，八九球都落在瓶子旁邊，阿伯只是輕輕點了點頭。</p><p>馬哥停下來問：「阿伯，你也懂排球喔？我發得不準嗎？」阿伯說：「沒什麼啦，就手熟而已。」馬哥臉一沉：「你憑什麼看不起我的發球！」阿伯說：「看我倒茶就知道了。」</p>"}, {"type": "adapt", "tag": ["第二組", "現代改編"], "h": "故事改編：新賣油翁", "part": "第二格", "old": "gourd", "now": ["teapot", "cup"], "body": "<p>他從推車拿出一個封好膜的空杯，在封膜正中間戳了一個吸管孔，放在地上，接著提起大茶壺慢慢往下倒。紅茶細成一條線，全落進那個小孔，封膜上一滴也沒沾到。</p><p>阿伯放下茶壺說：「我也沒什麼，就是手熟而已。」</p><p>馬哥愣了好幾秒，然後笑了出來，掏出三十塊跟阿伯買下那杯紅茶。</p><p>那天之後，馬哥還是每天留下來練發球，只是系排的學長姐再也沒聽他說過「發球王」這三個字。</p>"}, {"type": "finale", "tag": ["期中報告", "劇終"], "h": "", "body": "<p style=\"text-align:center;font:700 1.4em var(--head);letter-spacing:.1em\">無他，但手熟爾。</p>", "end": "— 劇 終 —"}]};
+const ic = (id,cls='') => `<svg class="sym cutfx ${cls}" viewBox="0 0 100 100"><use href="#i-${id}"/></svg>`;
+const tag = s => s.tag ? `<div class="tag"><b>${s.tag[0]}</b>${s.tag[1]||''}</div>` : '';
+const curtain = `<div class="curtain"><svg class="sym" viewBox="0 0 1200 70" preserveAspectRatio="none"><use href="#i-curtain"/></svg></div>`;
+const R = {
+ cover:s=>`<div class="inner"><div class="cast">${s.cast.map(c=>ic(c)).join('')}</div><span class="kind">${s.kind}</span><h1>${s.title}</h1><div class="sub">${s.sub}</div><div class="course">${DATA.course}</div></div>`,
+ playbill:s=>`<div class="inner"><div class="spot">${ic(s.icon)}</div><div><div class="kicker">${s.kicker}</div><h2>${s.title}</h2><div class="src">${s.src}</div>${s.lead?`<p class="lead">${s.lead}</p>`:''}</div></div><div class="ground" style="background:var(--amber)"></div>`,
+ narrate:s=>`${curtain}<div class="inner"><div><h3>${s.h}</h3><div class="story">${s.body}</div></div><div class="prop">${ic(s.icon)}</div></div><div class="ground"></div>`,
+ moral:s=>`<div class="glow"></div><div class="inner"><div class="kicker">${s.kicker}</div><blockquote>${s.text}</blockquote>${s.aside?`<p class="aside">${s.aside}</p>`:''}</div>`,
+ analysis:s=>`<div class="inner"><div class="vs"><div class="pair">${ic(s.icons[0])}<span class="x">${s.join||'×'}</span>${ic(s.icons[1])}</div><div class="cap">${s.cap}</div></div><div><h3>${s.h}</h3>${s.body}</div></div>`,
+ duo:s=>`<div class="inner"><h3>${s.h}</h3><div class="cols">${s.cols.map(c=>`<div class="col">${ic(c.icon)}<h4>${c.h}</h4><p>${c.p}</p><span class="note">${c.note}</span></div>`).join('')}</div></div>`,
+ list:s=>`<div class="inner"><div><h3>${s.h}</h3><p>${s.intro}</p><ol class="steps">${s.items.map((t,i)=>`<li><span>${i+1}</span>${t}</li>`).join('')}</ol><p class="out">${s.outro}</p></div><div class="prop">${ic(s.icon)}</div></div>`,
+ adapt:s=>`<div class="inner"><div class="head"><h3>${s.h}<small>${s.part}</small></h3></div><div class="strip"><div class="panel old"><small>古</small>${ic(s.old)}</div><div class="panel new"><small>今</small><div class="duo">${s.now.map(n=>ic(n)).join('')}</div></div></div><div class="frame">${s.body}</div></div>`,
+ beats:s=>`<div class="inner"><h3>${s.h}</h3><div class="row">${s.beats.map(b=>`<div class="beat"><span class="ch">${b.ch}</span>${ic(b.icon)}<h4>${b.h}</h4><p>${b.p}</p></div>`).join('')}</div></div>`,
+ contrast:s=>`<div class="inner"><h3>${s.h}</h3><table class="ctab"><thead><tr><th></th>${s.cols.map(c=>`<th><span class="th-ic">${ic(c.icon)}${c.h}</span></th>`).join('')}</tr></thead><tbody>${s.rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>${s.foot?`<p class="foot">${s.foot}</p>`:''}</div>`,
+ classic:s=>`${curtain}<div class="inner"><div><h3>${s.h}</h3><div class="classic">${s.body}</div></div><div class="prop">${ic(s.icon)}</div></div><div class="ground"></div>`,
+ groups:s=>`<div class="inner"><h3>${s.h}</h3><div class="groupcard">${s.groups.map(g=>`<div class="gc"><h4>${g.h}</h4><p class="mute">${g.sub}</p><ul>${g.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`).join('')}</div></div>`,
+ finale:s=>`<div class="drape l"><svg class="sym" viewBox="0 0 120 720" preserveAspectRatio="none"><use href="#i-drape"/></svg></div><div class="drape r"><svg class="sym" viewBox="0 0 120 720" preserveAspectRatio="none"><use href="#i-drape"/></svg></div><div class="inner"><h3>${s.h}</h3>${s.body||''}<div class="end">${s.end||''}</div></div>`
+};
+const deck=document.getElementById('deck');
+deck.innerHTML=DATA.scenes.map((s,i)=>`<section class="scene t-${s.type}" id="m${i+1}" aria-label="${(s.h||s.title||'').replace(/<[^>]+>/g,'')}">${tag(s)}${R[s.type](s)}</section>`).join('');
+const S=[...deck.querySelectorAll('.scene')];let cur=0;
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function scale(){const s=Math.min((innerWidth-40)/1280,(innerHeight-90)/720);document.documentElement.style.setProperty('--s',s)}
+function fit(){S.forEach(el=>{const inn=el.querySelector('.inner');let f=1;el.style.setProperty('--f',f);const was=el.style.display;el.style.display='block';
+  let guard=0;while(inn.scrollHeight>inn.clientHeight+2&&f>0.86&&guard++<20){f-=0.02;el.style.setProperty('--f',f)}el.style.display=was})}
+function show(i){cur=Math.max(0,Math.min(S.length-1,i));S.forEach((e,k)=>e.classList.toggle('on',k===cur));document.getElementById('pg').style.width=((cur+1)/S.length*100)+'%';if(location.hash!=='#m'+(cur+1))history.replaceState(null,'','#m'+(cur+1))}
+function mode(m){document.body.classList.toggle('slides',m==='slides');document.body.classList.toggle('read',m!=='slides');document.getElementById('bMode').textContent=m==='slides'?'閱讀模式':'投影模式';if(m==='slides'){scale();fit();show(cur)}else{S.forEach(e=>e.style.removeProperty('--f'))}}
+function theme(t){document.documentElement.dataset.theme=t;document.getElementById('bTheme').textContent=t==='dark'?'淺色':'深色';store.set('fable-theme',t)}
+theme(store.get('fable-theme')||'light');
+const h=parseInt((location.hash||'').replace('#m',''));if(h)cur=h-1;
+let manual=false;const auto=()=>(innerWidth>=900&&innerHeight>=520&&innerWidth>innerHeight)?'slides':'read';
+mode(auto());
+document.getElementById('bMode').onclick=()=>{manual=true;mode(document.body.classList.contains('slides')?'read':'slides')};
+document.getElementById('bTheme').onclick=()=>{theme(document.documentElement.dataset.theme==='dark'?'light':'dark');};
+document.getElementById('prev').onclick=()=>show(cur-1);document.getElementById('next').onclick=()=>show(cur+1);
+addEventListener('resize',()=>{if(!manual){const m=auto();if(m!==(document.body.classList.contains('slides')?'slides':'read'))mode(m)}if(document.body.classList.contains('slides'))scale()});
+let tx=null,ty=null;deck.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+deck.addEventListener('touchend',e=>{if(tx===null||!document.body.classList.contains('slides'))return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)){e.preventDefault();show(cur+(dx<0?1:-1))}tx=null},{passive:false});
+let t0=null,tid=null;
+function timer(){document.body.classList.toggle('timing');if(document.body.classList.contains('timing')){t0=Date.now();tid=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},500)}else clearInterval(tid)}
+addEventListener('keydown',e=>{if(!document.body.classList.contains('slides'))return;
+ if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();show(cur+1)}
+ else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();show(cur-1)}
+ else if(e.key==='Home')show(0);else if(e.key==='End')show(S.length-1);
+ else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}
+ else if(e.key==='t'||e.key==='T')timer();
+ else if(e.key==='d'||e.key==='D')theme(document.documentElement.dataset.theme==='dark'?'light':'dark')});
+deck.addEventListener('click',e=>{if(!document.body.classList.contains('slides'))return;e.clientX>innerWidth/2?show(cur+1):show(cur-1)});
+document.fonts&&document.fonts.ready.then(()=>{if(document.body.classList.contains('slides'))fit()});
+</script>
+</body>
+</html>
+
